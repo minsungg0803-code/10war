@@ -68,10 +68,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt-hi);outlin
 .dock{position:absolute;left:0;right:0;bottom:0;display:grid;gap:8px;pointer-events:none;
   padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
 .dock>*{pointer-events:auto;min-width:0}
-#deploy{grid-template-columns:minmax(260px,330px) minmax(0,1fr);grid-template-areas:"side main" "side actions";align-items:end}
+#deploy{grid-template-columns:minmax(260px,330px) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"side main" "side actions";align-items:end}
+#deploy #main-area{align-self:end}
+#side{max-height:calc(100dvh - 90px);overflow:auto}
 #side{grid-area:side;padding:12px 14px 14px;display:grid;gap:12px}
 #main-area{grid-area:main;min-width:0}
-.tabs{display:grid;grid-template-columns:1fr 1fr}
+.tabs{display:flex}.tabs button{flex:1 1 0;min-width:0}.tabs #info-toggle{flex:0 0 auto}
 #info-toggle{display:none;font-family:var(--f-body)!important;font-size:12px!important}
 #race-tabs button.locked{opacity:.3}
 .tabs button{padding:8px;font-family:var(--f-display);font-size:16px;color:var(--muted)}
@@ -210,6 +212,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt-hi);outlin
 .player-list b{font-weight:500;color:#e8b040}.player-list b.ok{color:var(--heal)}
 .ghost.mini{padding:5px 10px;font-size:12px}
 #btn-fight.ready{background:var(--heal)}
+#meter.off{visibility:hidden}
+#side.room #pane-army{display:none!important}
 @media (max-width:760px){
   #deploy{grid-template-columns:minmax(0,1fr);grid-template-areas:"side" "main" "actions"}
   #side{padding:10px 12px;gap:8px}
@@ -219,7 +223,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt-hi);outlin
   .desc{font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stats{display:none}
   #info-desc{display:none}
-  .tabs{grid-template-columns:1fr 1fr auto}
   #info-toggle{display:block;padding:8px 12px}
   #side:not(.open) #pane-army{display:none}
   #side.open #info-toggle{color:var(--gilt-hi)}
@@ -237,6 +240,30 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt-hi);outlin
   .cmd{gap:6px 10px}.cmd button{padding:8px 9px}
   .seg button{padding:8px 10px}
   #hint{display:none}
+  #meter.off{display:none}
+  .corner-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .corner-grid button{padding:8px 2px;font-size:12px}
+  .player-list{grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px}
+}
+@media (max-height:520px) and (min-width:761px){
+  #deploy{grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:6px}
+  #side{padding:8px 10px;gap:8px;max-height:calc(100dvh - 86px);overflow:auto}
+  .tabs button{padding:6px;font-size:14px}
+  #info-toggle{display:block;padding:6px 10px}
+  #side:not(.open) #pane-army{display:none}
+  #side.open #info-toggle{color:var(--gilt-hi)}
+  #info-desc,.stats{display:none}
+  .info-head{grid-template-columns:40px 1fr;gap:10px}.info-head img{width:40px;height:40px}
+  .card{width:66px;padding:4px 3px 5px}.card img{width:44px;height:44px}.card .key{display:none}.card .nm{font-size:11px}
+  .seg button{padding:7px 10px}.stepper button{height:32px}.ghost{padding:7px 12px}
+  .primary{padding:9px 18px;font-size:16px}
+  #race-tabs{margin-bottom:4px}
+  .player-list{gap:2px;font-size:12px}
+  .corner-grid button{padding:7px 4px}
+  #hint{display:none}
+  #top{padding-top:calc(6px + env(safe-area-inset-top,0px))}
+  .stage-tag,.net-pill,#budget,.icon-btn{padding-top:6px;padding-bottom:6px}
+  #meter{padding:7px 12px}
 }
 @media (prefers-reduced-motion:reduce){.row,.card,#meter .bar i{transition:none}#toast.show{animation:none}}
 </style>
@@ -266,7 +293,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt-hi);outlin
 
   <section id="deploy" class="dock" hidden>
     <div id="side" class="plate">
-      <div class="tabs seg"><button data-tab="army" class="on">병력</button><button data-tab="terrain">지형</button><button id="info-toggle" type="button" aria-label="병종 정보 보기">정보</button></div>
+      <div class="tabs seg"><button data-tab="room" id="tab-room" hidden>방</button><button data-tab="army" class="on">병력</button><button data-tab="terrain">지형</button><button id="info-toggle" type="button" aria-label="병종 정보 보기">정보</button></div>
       <div id="pane-online" hidden>
         <div class="row-set" style="justify-content:space-between"><span class="lbl">시작 위치</span><button id="copy-code" class="ghost mini" type="button">방 코드 복사</button></div>
         <div id="corner-grid" class="corner-grid"></div>
@@ -1638,7 +1665,7 @@ function canPlace(type,team,x,z,ignore){
   return '';
 }
 const faceFor=t=>t===0?PI:0;
-function warn(why){if(why==='corner'){toast('먼저 시작할 모서리를 골라줘');return}if(why==='race'){toast('온라인에선 한 종족만 쓸 수 있어요. 지금 종족: '+myRace(NET.myTeam));return}if(why==='half'){toast('내가 고른 모서리 구역 안에만 배치할 수 있어요');return}if(why==='gold'){toast('예산이 부족합니다');return}toast(why==='cap'?'한 진영에 최대 '+MAX_PER_SIDE+'명까지 배치할 수 있습니다':why==='terrain'?'물이나 성벽 위에는 배치할 수 없습니다':why==='zone'?'전장 테두리 안에만 배치할 수 있습니다':'자리가 없습니다')}
+function warn(why){if(why==='corner'){toast('먼저 시작할 모서리를 골라줘');setTab('room');return}if(why==='race'){toast('온라인에선 한 종족만 쓸 수 있어요. 지금 종족: '+myRace(NET.myTeam));return}if(why==='half'){toast('내가 고른 모서리 구역 안에만 배치할 수 있어요');return}if(why==='gold'){toast('예산이 부족합니다');return}toast(why==='cap'?'한 진영에 최대 '+MAX_PER_SIDE+'명까지 배치할 수 있습니다':why==='terrain'?'물이나 성벽 위에는 배치할 수 없습니다':why==='zone'?'전장 테두리 안에만 배치할 수 있습니다':'자리가 없습니다')}
 const faceAt=(x,z)=>NET.on?facingIn(x,z):faceFor(placeTeam);
 function placeOne(x,z){const why=canPlace(placeType,placeTeam,x,z);if(why)return why;spawn(placeType,placeTeam,x,z,faceAt(x,z));burst(x,standH(x,z)+.2,z,0xd8cba0,3,1.4,1.6,.35);return ''}
 function clusterSpots(cx,cz,n){
@@ -2048,7 +2075,9 @@ function setBuildTeam(t){buildTeam=t;for(const b of $$('#build-seg button'))b.cl
 function setCount(n){count=clamp(Math.round(n)||1,1,100);$('#count').value=count}
 function setTab(t){
   if(t==='terrain'&&NET.on&&!['wall','gate','demolish'].includes(terrTool))setTool('wall');
+  if(t==='room'&&!NET.on)t='army';
   tab=t;for(const b of $$('.tabs button[data-tab]'))b.classList.toggle('on',b.dataset.tab===t);
+  $('#side').classList.toggle('room',t==='room');
   $('#pane-army').hidden=t!=='army';$('#pane-terrain').hidden=t!=='terrain';$('#roster').hidden=$('#race-tabs').hidden=t!=='army';$('#presets').hidden=t!=='terrain';
   for(const id of ['#team-seg','#army-count','#btn-erase','#btn-clear'])$(id).hidden=t!=='army';
   ghost.visible=brushRing.visible=false;updateHint();
@@ -2396,7 +2425,7 @@ function enterOnlineDeploy(restore){
   if(NET.role==='host')for(const p of NET.players)if(p){p.ready=false;p.army=null}
   placeTeam=NET.me;setTeam(NET.me);setBuildTeam(NET.me);
   if(restore&&NET.myArmy)for(const [ti,x,z] of NET.myArmy)spawn(ORDER[ti],NET.me,x,z,facingIn(x,z));
-  setSpeed(1);showPhase('deploy');setTab('army');setRace(raceTab);updateMeter();
+  setSpeed(1);showPhase('deploy');setRace(raceTab);const _pl=NET.players[NET.me];setTab(_pl&&_pl.corner>=0?'army':'room');updateMeter();
   focusCorner();netUI();
   if(NET.role==='host')broadcastRoster();
 }
@@ -2415,7 +2444,7 @@ function pickCorner(k){
   for(const [c,w] of [...walls])if(w.team===NET.me)walls.delete(c);rebuildWalls();
   p.corner=k;
   if(NET.role==='host'){p.walls=[];broadcastRoster();broadcastWalls()}else netSend({t:'corner',c:k},1);
-  focusCorner();netUI();
+  focusCorner();setTab('army');netUI();
 }
 function queueWallSync(){if(NET.on&&phase==='deploy')NET.wallSendT=.35}
 function netPrimary(){
@@ -2526,20 +2555,22 @@ function updateBudget(){
 }
 function renderLobby(){
   const box=$('#pane-online');if(!box)return;
-  box.hidden=!(NET.on&&phase==='deploy');if(box.hidden)return;
+  box.hidden=!(NET.on&&phase==='deploy'&&tab==='room');$('#tab-room').textContent=NET.on?'방 '+NET.players.filter(p=>p&&p.here).length+'/4':'방';if(box.hidden)return;
   const me=NET.players[NET.me];
   const taken=k=>NET.players.findIndex(p=>p&&p.here&&p.corner===k);
   $('#corner-grid').innerHTML=[0,1,2,3].map(k=>{const o=taken(k);const mine=o===NET.me;
     return `<button data-k="${k}" class="${mine?'on':''}" ${o>=0&&!mine?'disabled':''} style="${o>=0?`border-color:${TEAM_CSS[o]};color:${TEAM_CSS[o]}`:''}">${CORNER[k]}${o>=0?` · ${o+1}P`:''}</button>`}).join('');
   for(const b of $$('#corner-grid button'))b.addEventListener('click',()=>pickCorner(+b.dataset.k));
   $('#player-list').innerHTML=NET.players.map((p,i)=>{if(!p||!p.here)return `<li class="empty"><i style="background:${TEAM_CSS[i]}"></i>${i+1}P · 빈 자리</li>`;
-    const st=i===0?'방장':p.ready?'준비 완료':'배치 중';return `<li><i style="background:${TEAM_CSS[i]}"></i>${i+1}P${i===NET.me?' (나)':''} · ${p.corner>=0?CORNER[p.corner]:'자리 고르는 중'} · <b class="${p.ready||i===0?'ok':''}">${st}</b></li>`}).join('');
+    const st=i===0?'방장':p.ready?'준비 완료':'배치 중';return `<li><i style="background:${TEAM_CSS[i]}"></i>${i+1}P${i===NET.me?' (나)':''} · ${p.corner>=0?CORNER[p.corner]:'자리 선택 전'} · <b class="${p.ready||i===0?'ok':''}">${st}</b></li>`}).join('');
   $('#reroll').hidden=NET.role!=='host';
 }
 function netUI(){
   const on=NET.on&&phase!=='title';
   $('#net-pill').hidden=!on;
   const tabT=$('.tabs [data-tab="terrain"]');
+  $('#tab-room').hidden=!(NET.on&&phase==='deploy');$('.stage-tag .rn').textContent=NET.on?'온라인':'자유 전장';$('#meter').classList.toggle('off',NET.on&&phase==='deploy');
+  if(!NET.on&&tab==='room')setTab('army');
   for(const b of $$('#tools button'))b.hidden=NET.on&&!['wall','gate','demolish'].includes(b.dataset.t);
   $('#presets').hidden=NET.on||tab!=='terrain';
   if(!NET.on){$('#btn-fight').textContent='전투 개시';$('#btn-fight').classList.remove('ready');$('#btn-menu').textContent='처음으로';$('#build-seg').parentElement.style.display='';
