@@ -1,0 +1,17 @@
+{
+  "name": "십족대전",
+  "short_name": "십족대전",
+  "description": "선과 악, 10종족 70병종을 배치하고 지켜보는 3D 판타지 전투 시뮬레이터. 최대 4명이 온라인으로 맞붙는다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#111715",
+  "theme_color": "#111715",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
