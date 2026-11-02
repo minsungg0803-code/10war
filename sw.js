@@ -1,5 +1,5 @@
 // 십족대전 — offline cache. Game page: network first (always newest when online). Libraries/fonts/icons: cache first.
-const V='sipjok-v14';
+const V='sipjok-v18';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()))});
